@@ -303,7 +303,7 @@ async function search() {
 }
 function addBookmark() { emit('bookmark', locator(), props.book.format === 'pdf' ? `第 ${pdfPage.value} 页` : `${currentChapter.value} · ${displayPercent.value}`); }
 function keydown(event: KeyboardEvent) {
-  if ((event.target as HTMLElement)?.closest('input, select, textarea, button') || event.altKey || event.metaKey || event.ctrlKey) return;
+  if ((event.target instanceof Element && event.target.closest('input, select, textarea, button')) || event.altKey || event.metaKey || event.ctrlKey) return;
   if (['ArrowRight', 'ArrowDown', ' ', 'PageDown'].includes(event.key)) { event.preventDefault(); void turn(false); }
   if (['ArrowLeft', 'ArrowUp', 'PageUp'].includes(event.key)) { event.preventDefault(); void turn(true); }
   if (event.key === 'Escape') { cancelTrackpad(); if (showContents.value || showSearch.value) { showContents.value = false; showSearch.value = false; } else if (controlsVisible.value) emit('close'); else { controlsVisible.value = true; scheduleControlsHide(); } }

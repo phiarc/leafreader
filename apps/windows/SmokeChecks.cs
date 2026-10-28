@@ -71,10 +71,10 @@ internal static class SmokeChecks
         await Import(window, fixture);
         await Wait(window, "document.querySelector('[aria-label=\"阅读 Windows 阅读验证\"]')");
         await Script(window, "document.querySelector('[aria-label=\"阅读 Windows 阅读验证\"]').click()");
-        await Wait(window, "document.querySelector('.page-content')?.textContent.includes('第一章 春天')");
+        await Wait(window, "document.querySelector('.page-content')?.textContent.includes('第一章 春天') && !document.querySelector('.reading-message')");
         Check((await Text(window)).Contains("清风穿过书页"), "Native file import and TXT rendering");
         string first = await Text(window);
-        await Script(window, "window.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight'}))");
+        await Script(window, "document.querySelector('.reading-paper').focus();document.querySelector('.reading-paper').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true}))");
         await Wait(window, $"document.querySelector('.page-content')?.textContent !== {JsonSerializer.Serialize(first)}");
         string later = await Text(window);
         Check(later.Length > 20, "Keyboard page turn");
