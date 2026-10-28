@@ -82,7 +82,14 @@ internal static class SmokeChecks
         Check(await window.Browser.CoreWebView2.ExecuteScriptAsync("document.querySelector('.reader').classList.contains('controls-hidden')") == "false", "Double click reveals reading controls");
         await Script(window, "document.querySelector('[aria-label=\"返回书架\"]').click()");
         await Wait(window, "!document.querySelector('.reader')");
+        // Wait for pending position persistence, then the actual navigation boundary.
+        await Task.Delay(250);
+        var reloaded = new TaskCompletionSource<bool>();
+        void Reloaded(object? _, Microsoft.Web.WebView2.Core.CoreWebView2NavigationCompletedEventArgs e)
+        { window.Browser.CoreWebView2.NavigationCompleted -= Reloaded; reloaded.TrySetResult(e.IsSuccess); }
+        window.Browser.CoreWebView2.NavigationCompleted += Reloaded;
         window.Browser.CoreWebView2.Reload();
+        if (!await reloaded.Task.WaitAsync(TimeSpan.FromSeconds(30))) throw new InvalidOperationException("Reader reload failed.");
         await Wait(window, "document.querySelector('[aria-label=\"阅读 Windows 阅读验证\"]')");
         await Script(window, "document.querySelector('[aria-label=\"阅读 Windows 阅读验证\"]').click()");
         await Wait(window, $"document.querySelector('.page-content')?.textContent === {JsonSerializer.Serialize(later)}");
