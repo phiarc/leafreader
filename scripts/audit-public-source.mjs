@@ -1,5 +1,5 @@
 import { readFile, readdir, lstat, writeFile } from 'node:fs/promises';
-import { resolve, relative } from 'node:path';
+import { resolve, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { homedir, userInfo } from 'node:os';
 const project=resolve(fileURLToPath(new URL('..',import.meta.url)));
@@ -25,7 +25,7 @@ export async function auditPublicSource(directory, privateRoot=project) {
   async function walk(folder) {
     for(const entry of await readdir(folder,{withFileTypes:true})) {
       if(entry.name==='.git')continue;
-      const path=resolve(folder,entry.name);const name=relative(target,path);
+      const path=resolve(folder,entry.name);const name=relative(target,path).split(sep).join('/');
       if(entry.isSymbolicLink()){findings.push({path:name,issue:'symbolic link'});continue;}
       if(entry.isDirectory()) {if(excluded.has(entry.name))findings.push({path:name,issue:'private or generated directory'});else await walk(path);continue;}
       if(!entry.isFile())continue;

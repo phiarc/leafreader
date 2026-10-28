@@ -1,4 +1,5 @@
-import { cp, mkdir } from 'node:fs/promises';
+import { cp, mkdir, rm } from 'node:fs/promises';
+await rm('public/pdf', { recursive: true, force: true });
 for (const name of ['cmaps', 'standard_fonts', 'wasm']) {
   await mkdir('public/pdf', { recursive: true });
   await cp(`node_modules/pdfjs-dist/${name}`, `public/pdf/${name}`, { recursive: true });

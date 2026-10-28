@@ -41,3 +41,5 @@ pwsh -File scripts/build-windows.ps1 -Runtime win-arm64
 - https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/evergreen-vs-fixed-version
 - https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.protecteddata
 - https://dotnet.microsoft.com/en-us/platform/support/policy
+
+PDF.js 已更新为 6.4.299，包含公开安全公告 GHSA-hq66-cqwq-w95j 的修复；Node PDF 回归测试显式依赖 Canvas 1.0.13。构建前会清理旧版 PDF 资源，避免不同版本混装。

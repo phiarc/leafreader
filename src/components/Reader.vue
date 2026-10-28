@@ -19,7 +19,7 @@ const text = ref(''); const loading = ref(true); const error = ref('');
 const start = ref(0); const end = ref(0); const pdfPage = ref(1); const pdfPages = ref(0);
 const chapters = ref<Chapter[]>([]); const showContents = ref(false); const showSearch = ref(false); const query = ref(''); const searchInfo = ref('');
 const encoding = ref(props.book.encoding || 'auto'); const direction = ref('forward'); const animating = ref(false);
-const zoom = ref(1); let documentText = new CodePointText(''); const textLength = ref(0); let preparingTurn = false; let pdf: pdfjs.PDFDocumentProxy | undefined; let renderTask: pdfjs.RenderTask | undefined;
+const zoom = ref(1); let documentText = new CodePointText(''); const textLength = ref(0); let preparingTurn = false; let pdf: pdfjs.PDFDocumentProxy | undefined; let pdfLoading: pdfjs.PDFDocumentLoadingTask | undefined; let renderTask: pdfjs.RenderTask | undefined;
 let resize: ResizeObserver | undefined; let resizeTimer: ReturnType<typeof setTimeout>; let marginTimer: ReturnType<typeof setTimeout>; let turnTimer: ReturnType<typeof setTimeout>; let destroyed = false; let renderVersion = 0;
 let ghost: HTMLElement | null = null;
 const controlsVisible = ref(true); const showReadingHint = ref(true);
@@ -364,11 +364,11 @@ onMounted(async () => {
   try {
     if (props.book.format === 'txt') { start.value = props.book.locator.type === 'txt' ? props.book.locator.offset : 0; await loadText(); }
     else {
-      const task = pdfjs.getDocument({ data: new Uint8Array(await props.book.content.arrayBuffer()), enableXfa: false,
+      const task = pdfLoading = pdfjs.getDocument({ data: new Uint8Array(await props.book.content.arrayBuffer()), enableXfa: false,
         cMapUrl: new URL('pdf/cmaps/', document.baseURI).href, cMapPacked: true,
         standardFontDataUrl: new URL('pdf/standard_fonts/', document.baseURI).href, wasmUrl: new URL('pdf/wasm/', document.baseURI).href });
       task.onPassword = () => { task.destroy(); error.value = '当前版本暂不支持加密 PDF，请先使用已解密的文件'; };
-      pdf = await task.promise; if (destroyed) { await pdf.destroy(); return; }
+      pdf = await task.promise; if (destroyed) { await task.destroy(); return; }
       pdfPages.value = pdf.numPages; pdfPage.value = Math.min(pdf.numPages, props.book.locator.type === 'pdf' ? props.book.locator.page + 1 : 1); await renderPdf();
     }
   } catch (err) { error.value ||= `无法打开文件：${(err as Error).message}`; }
@@ -392,7 +392,7 @@ watch(() => props.pageMargin, () => {
 watch([showContents, showSearch, () => props.settingsOpen], () => { if (showContents.value || showSearch.value || props.settingsOpen) { cancelTrackpad(); controlsVisible.value = true; } scheduleControlsHide(); });
 watch(encoding, async () => { cancelTrackpad(); clearGhost(); error.value = ''; await loadText(); });
 watch(zoom, () => { cancelTrackpad(); clearPdfPreviews(); clearGhost(); renderPdf(); });
-onBeforeUnmount(() => { destroyed = true; cancelTrackpad(); clearPdfPreviews(); window.removeEventListener('leaf-trackpad-phase', trackpadPhase); window.removeEventListener('blur', cancelTrackpad); document.removeEventListener('visibilitychange', loseGestureFocus); ++renderVersion; window.removeEventListener('keydown', keydown); window.removeEventListener('leaf-native-action', chromeAction); resize?.disconnect(); clearTimeout(resizeTimer); clearTimeout(marginTimer); clearTimeout(controlsTimer); readingBody.value?.removeEventListener('wheel', wheel); clearGhost(); renderTask?.cancel(); void pdf?.destroy(); });
+onBeforeUnmount(() => { destroyed = true; cancelTrackpad(); clearPdfPreviews(); window.removeEventListener('leaf-trackpad-phase', trackpadPhase); window.removeEventListener('blur', cancelTrackpad); document.removeEventListener('visibilitychange', loseGestureFocus); ++renderVersion; window.removeEventListener('keydown', keydown); window.removeEventListener('leaf-native-action', chromeAction); resize?.disconnect(); clearTimeout(resizeTimer); clearTimeout(marginTimer); clearTimeout(controlsTimer); readingBody.value?.removeEventListener('wheel', wheel); clearGhost(); renderTask?.cancel(); void pdfLoading?.destroy(); });
 </script>
 
 <template>
