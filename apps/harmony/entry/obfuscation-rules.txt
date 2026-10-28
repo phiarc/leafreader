@@ -1,0 +1,10 @@
+# Keep JSON and bridge property names stable if release obfuscation is enabled later.
+-keep-property-name
+id
+method
+args
+endpoint
+token
+path
+body
+postMessage

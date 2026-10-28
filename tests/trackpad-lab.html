@@ -1,0 +1,28 @@
+<!doctype html><html lang="zh-CN"><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Trackpad integration lab</title><div id="lab"></div>
+<script type="module">
+import {createApp,h,ref} from 'vue';
+import '/src/style.css';
+window.__leafTrackpadPhases=true;
+const {default:Reader}=await import('/src/components/Reader.vue');
+const {demoText}=await import('/src/demo.ts');
+const makeBook=(format,content)=>({id:format,title:'山间来信',fileName:'sample.'+format,format,size:content.size,importedAt:'2026-10-28',color:0,locator:format==='txt'?{type:'txt',offset:0}:{type:'pdf',page:0,y:0},progress:0,revision:0,dirty:false,content,bookmarks:[]});
+createApp({setup(){
+ const book=ref(makeBook('txt',new Blob([demoText]))),position=ref('未提交'),commits=ref(0),hidden=ref(false);
+ const phase=value=>window.dispatchEvent(new CustomEvent('leaf-trackpad-phase',{detail:value}));
+ const delta=(x,y=0,ctrl=false)=>document.querySelector('.reading-paper')?.dispatchEvent(new WheelEvent('wheel',{deltaX:x,deltaY:y,ctrlKey:ctrl,bubbles:true,cancelable:true}));
+ const button=(text,click)=>h('button',{onClick:click},text);
+ return()=>h('div',[
+  h(Reader,{key:book.value.id,book:book.value,theme:'paper',fontSize:20,animation:'slide',onPosition:(locator)=>{position.value=JSON.stringify(locator);commits.value++;}}),
+  !hidden.value?h('div',{class:'lab-controls'},[
+   h('output',{id:'result'},`提交 ${commits.value} 次；位置 ${position.value}`),
+   button('开始手势',()=>phase('begin')),button('滑动 20',()=>delta(20)),button('滑动 80',()=>delta(80)),button('滑动 160',()=>delta(160)),
+   button('反向 20',()=>delta(-20)),button('反向 160',()=>delta(-160)),button('抬手',()=>phase('end')),button('取消手势',()=>phase('cancel')),
+   button('连续两次',()=>{phase('begin');delta(160);phase('end');phase('begin');delta(160);phase('end');}),
+   button('纵向滚动',()=>delta(0,120)),button('捏合事件',()=>delta(120,0,true)),
+   button('PDF 样本',async()=>{phase('cancel');const bytes=await(await fetch('/tests/fixtures/阅读器验证.pdf')).blob();book.value=makeBook('pdf',bytes);position.value='未提交';commits.value=0;}),
+   button('隐藏测试面板',()=>{hidden.value=true;})
+  ]):null
+ ]);
+}}).mount('#lab');
+</script>
+<style>.lab-controls{position:fixed;z-index:100;top:4px;left:4px;width:190px;padding:10px;background:#eee;display:flex;flex-direction:column;gap:4px;font:11px sans-serif}.lab-controls button{padding:6px;border:1px solid #999;border-radius:4px;background:white}.lab-controls output{white-space:normal;word-break:break-all}</style></html>

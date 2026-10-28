@@ -1,0 +1,6 @@
+test/
+.local-data/
+local.settings.json
+.env
+local.mjs
+README.md

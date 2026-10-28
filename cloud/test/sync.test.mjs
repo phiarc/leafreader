@@ -1,0 +1,18 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { createService, tokenHash } from '../service.mjs';
+import { MemoryStore } from '../stores.mjs';
+const token = 'test-only-connection-token-000000000000000000000000';
+const book = 'a'.repeat(64); const path = `/v1/books/${book}/progress`;
+const body = (overrides = {}) => ({locatorVersion:1,locator:{type:'txt',offset:120},progress:.2,baseRevision:0,deviceId:'device-mac-001',operationId:'operation-0001',...overrides});
+function setup() { const store = new MemoryStore(); const handle = createService(store,{tokenHash:tokenHash(token),userId:'owner'}); return (method, payload, authorization = `Bearer ${token}`) => handle({method,path,body:payload,authorization}); }
+test('rejects missing and wrong authentication without revealing progress',async()=>{const run=setup();assert.equal((await run('GET',undefined,'')).status,401);assert.equal((await run('GET',undefined,`Bearer ${'x'.repeat(48)}`)).status,401);});
+test('new progress can be read by another device',async()=>{const run=setup();assert.equal((await run('GET')).status,404);const save=await run('PUT',body());assert.equal(save.status,200);assert.equal(save.data.revision,1);assert.deepEqual((await run('GET')).data.locator,{type:'txt',offset:120});});
+test('retrying an operation is idempotent',async()=>{const run=setup();await run('PUT',body());const retry=await run('PUT',body());assert.equal(retry.status,200);assert.equal(retry.data.revision,1);});
+test('offline stale progress cannot replace a newer revision',async()=>{const run=setup();await run('PUT',body());await run('PUT',body({baseRevision:1,operationId:'operation-0002',locator:{type:'txt',offset:900},progress:.8}));const stale=await run('PUT',body({deviceId:'device-harmony',operationId:'operation-offline'}));assert.equal(stale.status,409);assert.equal(stale.data.current.locator.offset,900);});
+test('reusing an operation ID with changed content is rejected',async()=>{const run=setup();await run('PUT',body());const changed=await run('PUT',body({locator:{type:'txt',offset:999}}));assert.equal(changed.status,409);});
+test('two simultaneous first writes do not silently overwrite each other',async()=>{const run=setup();const results=await Promise.all([run('PUT',body()),run('PUT',body({operationId:'operation-0002',deviceId:'device-harmony',locator:{type:'txt',offset:500}}))]);assert.deepEqual(results.map(r=>r.status).sort(),[200,409]);});
+test('returning to an earlier page is valid when based on the current revision',async()=>{const run=setup();await run('PUT',body());const saved=await run('PUT',body({baseRevision:1,operationId:'operation-0002',locator:{type:'txt',offset:0},progress:0}));assert.equal(saved.status,200);assert.equal(saved.data.locator.offset,0);});
+test('rejects malformed locators, invalid revisions, and out of range progress',async()=>{const run=setup();for(const invalid of [{locator:{type:'txt',offset:-1}},{locator:{type:'pdf',page:0,y:2}},{progress:1.2},{baseRevision:.1},{locatorVersion:2},{deviceId:'x'},{operationId:'../escape'}])assert.equal((await run('PUT',body(invalid))).status,400);});
+test('old retries remain idempotent after a newer operation',async()=>{const run=setup();await run('PUT',body());await run('PUT',body({baseRevision:1,operationId:'operation-0002'}));assert.equal((await run('PUT',body())).data.revision,1);assert.equal((await run('GET')).data.revision,2);});
+test('PDF page and normalized vertical position survive synchronization',async()=>{const run=setup();await run('PUT',body({locator:{type:'pdf',page:43,y:.4}}));assert.deepEqual((await run('GET')).data.locator,{type:'pdf',page:43,y:.4});});

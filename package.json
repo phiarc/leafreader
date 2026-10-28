@@ -1,0 +1,27 @@
+{
+  "name": "leaf-reader",
+  "version": "0.1.13",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "node scripts/prepare-brand.mjs && node scripts/prepare-assets.mjs && vue-tsc --noEmit && vite build && node scripts/package-web.mjs",
+    "test": "node --import tsx --test tests/*.test.mjs tests/*.test.ts cloud/test/*.test.mjs",
+    "mac:build": "npm run build && bash scripts/build-macos.sh",
+    "harmony:build": "npm run build && bash scripts/build-harmony.sh",
+    "cloud:dev": "node cloud/local.mjs",
+    "cloud:test": "node --test cloud/test/*.test.mjs"
+  },
+  "dependencies": {
+    "pdfjs-dist": "^5.4.0",
+    "vue": "^3.5.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.0",
+    "fake-indexeddb": "^6.2.6",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.0",
+    "vite": "^7.0.0",
+    "vue-tsc": "^3.1.0"
+  }
+}

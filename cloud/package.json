@@ -1,0 +1,19 @@
+{
+  "name": "leaf-reader-sync",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "azure.mjs",
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@azure/cosmos": "^4.9.0",
+    "@azure/functions": "^4.8.0",
+    "@azure/storage-blob": "^12.34.0"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "start": "node local.mjs"
+  }
+}

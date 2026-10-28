@@ -1,0 +1,10 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { normalizeText,decodeText,findChapters,clampOffset,escapeHtml } from '../src/core/text.mjs';
+test('normalizes BOM, line endings and Unicode consistently',()=>assert.equal(normalizeText('\uFEFF第一章\r\ne\u0301\r正文'),'第一章\né\n正文'));
+test('UTF-8 decoding preserves Chinese and supplementary-plane characters',()=>assert.deepEqual(decodeText(new TextEncoder().encode('你好🌿')),{text:'你好🌿',encoding:'utf-8'}));
+test('detects GB18030 text when UTF-8 is invalid',()=>assert.equal(decodeText(new Uint8Array([0xc4,0xe3,0xba,0xc3])).text,'你好'));
+test('chapter offsets use code points rather than UTF-16 units',()=>{const text='🌿\n第一章 清晨\n正文\n第二章 山路';assert.deepEqual(findChapters(text),[{title:'第一章 清晨',offset:2},{title:'第二章 山路',offset:Array.from('🌿\n第一章 清晨\n正文\n').length}]);});
+test('falls back to a body chapter',()=>assert.deepEqual(findChapters('没有标题的正文'),[{title:'正文',offset:0}]));
+test('outdated locators are clamped into the current text',()=>{assert.equal(clampOffset(999,30),29);assert.equal(clampOffset(-5,30),0);assert.equal(clampOffset(NaN,30),0);assert.equal(clampOffset(1,0),0);});
+test('imported text cannot turn into HTML markup',()=>assert.equal(escapeHtml('<script>"x"&</script>'),'&lt;script&gt;&quot;x&quot;&amp;&lt;/script&gt;'));

@@ -1,0 +1,10 @@
+import { cp, mkdir, rm, writeFile } from 'node:fs/promises';
+import { collectHarmonyAssets, renderHarmonyManifest } from './harmony-assets.mjs';
+const target = 'apps/harmony/entry/src/main/resources/rawfile/reader';
+await rm(target, { recursive: true, force: true });
+await mkdir(target, { recursive: true });
+await cp('dist', target, { recursive: true, force: true });
+const assets = await collectHarmonyAssets('dist');
+await writeFile('apps/harmony/entry/src/main/ets/bridge/LocalAssetManifest.ets', renderHarmonyManifest(assets));
+await writeFile(`${target}/asset-manifest.json`, JSON.stringify(assets, null, 2) + '\n');
+console.log('共享阅读资源已准备完成。');
