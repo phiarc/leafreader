@@ -32,6 +32,21 @@ if(process.platform==='darwin') {
   const header=Buffer.alloc(8);header.write('icns',0,4,'ascii');header.writeUInt32BE(8+chunks.reduce((sum,c)=>sum+c.length,0),4);
   await writeFile('apps/macos/Resources/LeafReader.icns',Buffer.concat([header,...chunks]));
   execFileSync('xcrun',['swift','-module-cache-path','.cache/swift','scripts/render-icon.swift',original,resolve(harmony),'harmony'],{stdio:'inherit'});
+  await mkdir('apps/windows/Resources',{recursive:true});
+  const sizes=[16,32,48,64,128,256];const images=[];
+  for(const size of sizes){
+    const path=`${iconset}/windows_${size}.png`;
+    execFileSync('/usr/bin/sips',['-z',String(size),String(size),harmony,'--out',path],{stdio:'ignore'});
+    images.push(await readFile(path));
+  }
+  const icoHeader=Buffer.alloc(6+16*sizes.length);icoHeader.writeUInt16LE(1,2);icoHeader.writeUInt16LE(sizes.length,4);
+  let position=icoHeader.length;
+  for(let index=0;index<sizes.length;index++){
+    const entry=6+16*index;icoHeader[entry]=sizes[index]===256?0:sizes[index];icoHeader[entry+1]=icoHeader[entry];
+    icoHeader.writeUInt16LE(1,entry+4);icoHeader.writeUInt16LE(32,entry+6);icoHeader.writeUInt32LE(images[index].length,entry+8);icoHeader.writeUInt32LE(position,entry+12);position+=images[index].length;
+  }
+  await writeFile('apps/windows/Resources/LeafReader.ico',Buffer.concat([icoHeader,...images]));
+
 }
 await rm('apps/harmony/AppScope/resources/base/media/app_icon.svg',{force:true});
 console.log('应用标志与平台图标已准备完成。');

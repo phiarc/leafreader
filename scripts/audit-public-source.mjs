@@ -20,7 +20,7 @@ export async function auditPublicSource(directory, privateRoot=project) {
     }
     collect(body);
   }
-  const excluded=new Set(['.cache','.azure','.aws','.ohos','node_modules','oh_modules','.hvigor','.idea','.vscode','dist','build','.local-data']);
+  const excluded=new Set(['.cache','.azure','.aws','.ohos','node_modules','oh_modules','.hvigor','.idea','.vscode','dist','build','.local-data','bin','obj','.vs','TestResults']);
   const findings=[];let files=0,bytes=0;
   async function walk(folder) {
     for(const entry of await readdir(folder,{withFileTypes:true})) {
@@ -32,7 +32,7 @@ export async function auditPublicSource(directory, privateRoot=project) {
       files++;const buffer=await readFile(path);bytes+=buffer.length;
       if(/\.(p12|p7b|cer|keystore|pem|key|pfx|provisionprofile|mobileprovision|harmonyprovision|hap|log)$/.test(entry.name) || entry.name==='.DS_Store' || entry.name.startsWith('._') || /^\.env(?:\.|$)/.test(entry.name) && entry.name!=='.env.example') findings.push({path:name,issue:'private file type'});
       for(const [needle,kind]of needles)if(buffer.includes(Buffer.from(needle)))findings.push({path:name,issue:kind});
-      if(/\.(?:mjs|ts|ets|swift|json5?|md|txt|html|css|ya?ml|sh|plist)$/.test(entry.name) || entry.name==='.gitignore') {
+      if(/\.(?:mjs|ts|ets|swift|cs|csproj|manifest|ps1|json5?|md|txt|html|css|ya?ml|sh|plist)$/.test(entry.name) || entry.name==='.gitignore') {
         const text=buffer.toString('utf8');
         for(const [issue,pattern]of [
           ['private key',/-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----/],

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, writeFile, readFile, rm, stat } from 'node:fs/promises';
-import { join, resolve } from 'node:path';
+import { join, resolve, relative, isAbsolute } from 'node:path';
 import { tmpdir } from 'node:os';
 import { collectHarmonyAssets, renderHarmonyManifest } from '../scripts/harmony-assets.mjs';
 
@@ -51,7 +51,7 @@ test('every entry point in the real packaged reader is served by the native reso
   }
   for(const entry of entries) {
     const file=resolve(root,entry.rawfile.replace(/^reader\//,''));
-    assert.ok(file.startsWith(root+'/'));
+    const local=relative(root,file);assert.ok(!local.startsWith('..') && !isAbsolute(local));
     assert.ok((await stat(file)).isFile());
   }
 });

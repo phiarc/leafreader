@@ -1,6 +1,6 @@
 {
   "name": "leaf-reader",
-  "version": "0.1.13",
+  "version": "0.1.14",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,7 +10,8 @@
     "mac:build": "npm run build && bash scripts/build-macos.sh",
     "harmony:build": "npm run build && bash scripts/build-harmony.sh",
     "cloud:dev": "node cloud/local.mjs",
-    "cloud:test": "node --test cloud/test/*.test.mjs"
+    "cloud:test": "node --test cloud/test/*.test.mjs",
+    "windows:build": "pwsh -File scripts/build-windows.ps1"
   },
   "dependencies": {
     "pdfjs-dist": "^5.4.0",

@@ -1,16 +1,18 @@
 # 页间 · Leaf Reader
 
-本地优先的 TXT / PDF 阅读器。当前交付 macOS 可运行测试版、HarmonyOS 原生工程与未签名 HAP，以及可自行部署的 Azure 书库与进度同步服务。Windows 客户端尚未实现。
+本地优先的 TXT / PDF 阅读器。支持 macOS、HarmonyOS 和 Windows 的原生外壳，共用阅读引擎与可自行部署的 Azure 书库/进度同步服务。
 
 本仓库仅提供源码、构建模板及合成测试素材；个人同步连接码、Azure 登录缓存、设备签名与阅读数据不随源码分发。
 
 ## 运行
 
+Windows：完整解压对应架构的便携包后运行 `LeafReader.exe`，详见 [Windows 运行与构建说明](docs/WINDOWS.md)。
+
 macOS：打开 `build/macos/页间.app`。当前二进制面向 Apple Silicon，使用本机 Swift 工具链构建并做本地临时签名，尚未公证或进行商店发布。
 
 HarmonyOS：用 DevEco Studio 打开 `apps/harmony`。本机已使用 SDK 26.0.0 Release 编译通过，工程最低兼容配置为 `6.1.1(24)`。先在 Project Structure → Signing Configs 中为自己的设备配置调试签名，再安装运行。仓库不包含设备签名配置；真机效果需要自行构建验证。
 
-更新：鸿蒙 0.1.13 使用独立图标资源，去掉外圈透明留白，保留圆角；macOS 仍为 0.1.12，资源未变。此前 0.1.12 将 Dock、关于面板、鸿蒙启动窗口及界面标志统一为透明圆角图标。此前鸿蒙 0.1.11 移除阅读页边缘渐变，消除与底部手势区域的色差，控件与正文布局不变。macOS 保持 0.1.10。此前 0.1.10 恢复鸿蒙系统安全区内的控件位置，只延伸背景绘制；macOS 支持每侧 0–35% 连续留白与百分比输入，详见 `docs/LAYOUT_0.1.10.md`。此前 0.1.9 支持书本文件云端同步、另一端书架自动发现和按需下载，并优化鸿蒙全屏阅读、通知位置与编码二级菜单，详见 `docs/BOOK_SYNC_0.1.9.md`。保留 macOS 持久连接、Liquid Glass、鸿蒙沉浸光感与跟手翻页。本轮未安装或调试鸿蒙设备。本机签名配置不包含在源码包中。
+更新：0.1.14 加入 Windows WPF/WebView2 外壳、DPAPI 持久连接及 Windows 原生构建检查，见 `docs/WINDOWS.md`。macOS 保持 0.1.12、鸿蒙保持 0.1.13。此前鸿蒙 0.1.13 使用独立图标资源，去掉外圈透明留白，保留圆角；macOS 仍为 0.1.12，资源未变。此前 0.1.12 将 Dock、关于面板、鸿蒙启动窗口及界面标志统一为透明圆角图标。此前鸿蒙 0.1.11 移除阅读页边缘渐变，消除与底部手势区域的色差，控件与正文布局不变。macOS 保持 0.1.10。此前 0.1.10 恢复鸿蒙系统安全区内的控件位置，只延伸背景绘制；macOS 支持每侧 0–35% 连续留白与百分比输入，详见 `docs/LAYOUT_0.1.10.md`。此前 0.1.9 支持书本文件云端同步、另一端书架自动发现和按需下载，并优化鸿蒙全屏阅读、通知位置与编码二级菜单，详见 `docs/BOOK_SYNC_0.1.9.md`。保留 macOS 持久连接、Liquid Glass、鸿蒙沉浸光感与跟手翻页。本轮未安装或调试鸿蒙设备。本机签名配置不包含在源码包中。
 
 ## 已实现
 
@@ -51,6 +53,7 @@ npm run dev
 npm test
 npm run mac:build
 npm run harmony:build
+npm run windows:build
 ```
 
 `npm run build` 会把 PDF.js 的字体、字符映射和 Wasm 资源打入本地包，并将共享界面复制到鸿蒙 `rawfile/reader` 目录。运行时不从 CDN 下载阅读资源。
@@ -104,6 +107,7 @@ src/                 共享 Vue / TypeScript 阅读界面与同步客户端
 src/core/            文本解码、规范化与目录识别
 apps/macos/          原生 macOS 外壳
 apps/harmony/        ArkTS / ArkUI / ArkWeb 工程
+apps/windows/        .NET 10 WPF / WebView2 工程
 cloud/               Azure Functions 与 Cosmos DB 同步服务
 scripts/             构建、打包、部署及云端验证
 tests/               端侧核心与同步集成测试

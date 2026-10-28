@@ -1,9 +1,10 @@
+import { fileURLToPath } from 'node:url';
 import { createServer } from 'node:http';
 import { createService, tokenHash } from './service.mjs';
 import { FileStore } from './stores.mjs';
 const token = process.env.LEAF_DEV_TOKEN;
 if (!token || !/^[a-zA-Z0-9_-]{32,256}$/.test(token)) throw new Error('Set LEAF_DEV_TOKEN to a development-only token of at least 32 URL-safe characters.');
-const store = await new FileStore(new URL('.local-data',import.meta.url).pathname).load();
+const store = await new FileStore(fileURLToPath(new URL('.local-data',import.meta.url))).load();
 const handle = createService(store,{tokenHash:tokenHash(token),userId:'local-owner'});
 const server = createServer(async (request,response) => {
   const origin = request.headers.origin;

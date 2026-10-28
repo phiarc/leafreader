@@ -3,8 +3,8 @@ import { cp, mkdir, rm, lstat } from 'node:fs/promises';
 import { resolve, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 const root=resolve(fileURLToPath(new URL('..',import.meta.url)));
-export const sourceEntries=['src','apps','cloud','scripts','tests','docs','public','README.md','BUGS.md','package.json','package-lock.json','tsconfig.json','vite.config.ts','index.html','.gitignore'];
-const ignored=new Set(['node_modules','oh_modules','.hvigor','.cache','.local-data','build','dist','.idea','.vscode','.DS_Store','.git','.azure','.ohos','.aws','local.properties','local.settings.json']);
+export const sourceEntries=['.github','src','apps','cloud','scripts','tests','docs','public','README.md','BUGS.md','package.json','package-lock.json','tsconfig.json','vite.config.ts','index.html','.gitignore'];
+const ignored=new Set(['node_modules','oh_modules','.hvigor','.cache','.local-data','build','dist','.idea','.vscode','.DS_Store','.git','.azure','.ohos','.aws','local.properties','local.settings.json','bin','obj','.vs','TestResults']);
 export async function exportPublicSource(destination) {
   const target=resolve(destination);
   // Restrict the destructive refresh to generated source folders under this project.

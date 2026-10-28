@@ -5,7 +5,7 @@ declare global {
     LeafNative?: { postMessage: (message: string) => void };
     __leafTrackpadPhases?: boolean;
     __leafNativeChrome?: boolean;
-    __leafNativePlatform?: 'macos' | 'harmony';
+    __leafNativePlatform?: 'macos' | 'harmony' | 'windows';
     __leafReply?: (reply: Reply) => void;
   }
 }

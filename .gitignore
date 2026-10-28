@@ -43,3 +43,12 @@ local.settings.json
 *-connection.json
 *-azure-settings.json
 sync-credential.v1
+
+# Windows/.NET local builds and publish output
+bin/
+obj/
+.vs/
+TestResults/
+*.user
+*.suo
+*.pdb

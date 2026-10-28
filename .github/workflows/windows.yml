@@ -1,0 +1,76 @@
+name: Windows desktop
+on:
+  push:
+    branches: [main]
+    paths: ['apps/windows/**', 'src/**', 'public/**', 'scripts/**', 'tests/**', 'cloud/**', 'package*.json', 'index.html', 'vite.config.ts', 'tsconfig.json', '.github/workflows/windows.yml']
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        runtime: [win-x64, win-arm64]
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: '24'
+          cache: npm
+      - uses: actions/setup-dotnet@v6.0.0
+        with:
+          dotnet-version: '10.0.x'
+      - name: Install JavaScript dependencies
+        run: npm ci
+      - name: Build shared reader and run regression tests
+        run: |
+          npm run build
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npm test
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Publish portable Windows package
+        run: ./scripts/build-windows.ps1 -Runtime ${{ matrix.runtime }} -SkipWebBuild
+      - name: Verify WebView2 Runtime
+        if: matrix.runtime == 'win-x64'
+        run: |
+          $runtime = Get-ChildItem 'C:/Program Files (x86)/Microsoft/EdgeWebView/Application','C:/Program Files/Microsoft/EdgeWebView/Application' -ErrorAction SilentlyContinue
+          if (-not $runtime) {
+            Invoke-WebRequest 'https://go.microsoft.com/fwlink/p/?LinkId=2124703' -OutFile "$env:RUNNER_TEMP/WebView2Setup.exe"
+            $install = Start-Process "$env:RUNNER_TEMP/WebView2Setup.exe" -ArgumentList '/silent','/install' -PassThru -Wait
+            if ($install.ExitCode -ne 0) { throw "WebView2 installer exited $($install.ExitCode)" }
+          }
+      - name: Run native Windows smoke checks
+        if: matrix.runtime == 'win-x64'
+        run: |
+          $env:LEAF_DEV_TOKEN = 'windows-native-smoke-fixture-not-a-real-connection-code-0001'
+          $server = Start-Process node -ArgumentList 'cloud/local.mjs' -PassThru -RedirectStandardOutput build/smoke-server.txt -RedirectStandardError build/smoke-server-error.txt
+          try {
+            $ready = $false
+            for ($i=0; $i -lt 30; $i++) {
+              try { Invoke-RestMethod 'http://127.0.0.1:7071/api/v1/health' -Headers @{Authorization="Bearer $env:LEAF_DEV_TOKEN"} | Out-Null; $ready=$true; break } catch { Start-Sleep -Seconds 1 }
+            }
+            if (-not $ready) { throw 'Local synthetic sync server did not start.' }
+            $process = Start-Process ./build/windows/win-x64/LeafReader.exe -ArgumentList @('--smoke-test','--local-sync','--report',"`"$PWD/build/windows-smoke.json`"",'--pdf-fixture',"`"$PWD/tests/fixtures/阅读器验证.pdf`"") -PassThru
+            if (-not $process.WaitForExit(180000)) { $process.Kill(); throw 'Windows smoke checks timed out.' }
+            if (Test-Path build/windows-smoke.json) { Get-Content build/windows-smoke.json }
+            if ($process.ExitCode -ne 0) { throw "Windows smoke checks exited $($process.ExitCode)" }
+            if (-not (Test-Path build/windows-smoke.json)) { throw 'Windows smoke report missing.' }
+          } finally { Stop-Process -Id $server.Id -ErrorAction SilentlyContinue }
+      - uses: actions/upload-artifact@v7.0.2
+        with:
+          name: LeafReader-${{ matrix.runtime }}
+          path: build/releases/*Windows*.zip
+          if-no-files-found: error
+          retention-days: 14
+      - uses: actions/upload-artifact@v7.0.2
+        if: always() && matrix.runtime == 'win-x64'
+        with:
+          name: Windows-smoke-report
+          path: |
+            build/windows-smoke.json
+            build/smoke-server*.txt
+          retention-days: 14
